@@ -30,6 +30,7 @@
 
   const esc = (s) => String(s ?? "").replace(/[&<>"']/g, (c) => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;" }[c]));
   const $app = document.getElementById("app");
+  const LOGO = `<span class="logo-chip"><img src="/assets/logo.png" alt="사회복지법인 성민 중랑구발달장애인평생교육센터" width="1164" height="84" /></span>`;
   const cache = {};
   let index = null;
   let state = { cls: null, tab: "today", date: null, weekOffset: 0 };
@@ -88,7 +89,7 @@
   /* ---------- 홈 ---------- */
   async function renderHome() {
     await loadIndex();
-    document.title = "가정통신문&식단표 · 중랑구발달장애인평생교육센터";
+    document.title = "가정통신문&식단표 · 성민 중랑구발달장애인평생교육센터";
     document.documentElement.style.setProperty("--accent", "#2f7d5b");
     const all = await Promise.all(index.months[index.latest].map((id) => loadClass(id)));
     const draw = () => {
@@ -111,7 +112,7 @@
       const [y, m] = index.latest.split("-");
       $app.innerHTML = `<div class="wrap">
         <header class="home-head">
-          <div class="center">${esc(all[0]?.center || "")}</div>
+          <div class="center">${LOGO}</div>
           <h1>가정통신문&amp;식단표</h1>
           <p>${+y}년 ${+m}월 · ${fmtDate(n.date)} · 우리 반을 눌러 주세요</p>
         </header>
@@ -142,7 +143,7 @@
       <header class="term-head"><div class="wrap">
         <div class="head-row">
           <a class="back" href="#/">← 반 선택</a>
-          <div class="head-title"><div class="sub">${esc(data.center)} · ${esc(data.period)}</div><h1>${esc(data.name)}</h1></div>
+          <div class="head-title"><div class="sub">${LOGO}<span>${esc(data.period)}</span></div><h1>${esc(data.name)}</h1></div>
           <button class="tool-btn" id="fs" title="전체화면">⛶ 전체화면</button>
           <div class="clock"><div class="time" id="clk"></div><div class="date" id="clkd"></div></div>
         </div>
