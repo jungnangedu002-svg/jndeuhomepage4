@@ -1,6 +1,6 @@
-/* 반별 터미널 — 중랑구발달장애인평생교육센터
+/* 가정통신문&식단표 — 중랑구발달장애인평생교육센터
  * 주소 형식:  /            → 반 선택 화면
- *             /#/jarip1    → 자립지원1반 터미널 (오늘)
+ *             /#/jarip1    → 자립지원1반 화면 (오늘)
  *             /#/jarip1/menu | week | month | elective | outing | info
  * 테스트용:   ?now=2026-11-04T11:20  (현재 시각을 고정)
  */
@@ -88,7 +88,7 @@
   /* ---------- 홈 ---------- */
   async function renderHome() {
     await loadIndex();
-    document.title = "반별 터미널 · 중랑구발달장애인평생교육센터";
+    document.title = "가정통신문&식단표 · 중랑구발달장애인평생교육센터";
     document.documentElement.style.setProperty("--accent", "#2f7d5b");
     const all = await Promise.all(index.months[index.latest].map((id) => loadClass(id)));
     const draw = () => {
@@ -105,14 +105,14 @@
         }
         return `<a class="class-card" href="#/${d.id}" style="--c:${d.color}">
           <span class="name">${esc(d.name)}</span>
-          <span class="go">터미널 열기 →</span>
+          <span class="go">보러 가기 →</span>
           <span class="now">${nowTxt}</span></a>`;
       }).join("");
       const [y, m] = index.latest.split("-");
       $app.innerHTML = `<div class="wrap">
         <header class="home-head">
           <div class="center">${esc(all[0]?.center || "")}</div>
-          <h1>반별 터미널</h1>
+          <h1>가정통신문&amp;식단표</h1>
           <p>${+y}년 ${+m}월 · ${fmtDate(n.date)} · 우리 반을 눌러 주세요</p>
         </header>
         <nav class="class-grid" aria-label="반 선택">${cards}</nav>
@@ -123,7 +123,7 @@
     timer = setInterval(draw, 30000);
   }
 
-  /* ---------- 반 터미널 ---------- */
+  /* ---------- 반별 화면 ---------- */
   async function renderClass() {
     await loadIndex();
     let data;
@@ -131,7 +131,7 @@
     data.menu = await loadMenu(data.month);
     document.documentElement.style.setProperty("--accent", data.color);
     document.querySelector('meta[name="theme-color"]').content = data.color;
-    document.title = `${data.name} 터미널`;
+    document.title = `${data.name} 가정통신문&식단표`;
     const n = now();
     if (!state.date) state.date = pickDefaultDate(data, n);
 

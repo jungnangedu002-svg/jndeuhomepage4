@@ -46,7 +46,7 @@ button { font: inherit; color: inherit; cursor: pointer; }
 .class-card .go { color: var(--c); font-weight: 700; font-size: 16px; }
 .home-foot { margin-top: 32px; color: var(--ink-3); font-size: 15px; }
 
-/* ---------- 반 터미널 헤더 ---------- */
+/* ---------- 반별 화면 헤더 ---------- */
 .term-head {
   background: var(--accent); color: #fff; padding: 18px 0 0;
   position: sticky; top: 0; z-index: 5; box-shadow: 0 2px 12px rgba(0,0,0,.12);
