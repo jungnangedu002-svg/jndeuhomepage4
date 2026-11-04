@@ -14,6 +14,7 @@
  */
 const fs = require("fs");
 const path = require("path");
+const crypto = require("crypto");
 const { chromium } = require("playwright");
 
 const ROOT = path.resolve(__dirname, "..");
@@ -105,8 +106,11 @@ function shareBlock({ title, desc, url, image }) {
   const page = await browser.newPage({ viewport: { width: 1200, height: 630 }, deviceScaleFactor: 1 });
   for (const p of pages) {
     await page.setContent(cardHTML(p.card), { waitUntil: "load" });
-    await page.screenshot({ path: path.join(ROOT, `assets/og/${p.id}.png`) });
-    const html = withShare(shareBlock({ title: p.title, desc: p.desc, url: p.url, image: `${SITE_URL}/assets/og/${p.id}.png` }));
+    const imgPath = path.join(ROOT, `assets/og/${p.id}.png`);
+    await page.screenshot({ path: imgPath });
+    // 이미지가 바뀌면 주소(?v=)도 바뀌어서, 카카오톡이 예전에 저장한 이미지를 다시 쓰지 않아요
+    const ver = crypto.createHash("sha1").update(fs.readFileSync(imgPath)).digest("hex").slice(0, 8);
+    const html = withShare(shareBlock({ title: p.title, desc: p.desc, url: p.url, image: `${SITE_URL}/assets/og/${p.id}.png?v=${ver}` }));
     fs.mkdirSync(path.dirname(path.join(ROOT, p.file)), { recursive: true });
     fs.writeFileSync(path.join(ROOT, p.file), html);
     console.log(`✔ ${p.file}  ←  assets/og/${p.id}.png  (${p.url})`);

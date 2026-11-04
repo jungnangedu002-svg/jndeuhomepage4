@@ -1,7 +1,7 @@
 /* 가정통신문&식단표 — 중랑구발달장애인평생교육센터
- * 주소 형식:  /            → 반 선택 화면
- *             /#/jarip1    → 자립지원1반 화면 (오늘)
- *             /#/jarip1/menu | week | month | elective | outing | info
+ * 주소 형식:  /              → 반 선택 화면
+ *             /jarip1        → 자립지원1반 화면 (오늘)
+ *             /jarip1#menu | #week | #month | #elective | #outing | #info
  * 테스트용:   ?now=2026-11-04T11:20  (현재 시각을 고정)
  */
 (() => {
@@ -78,12 +78,12 @@
 
   /* ---------- 라우팅 ---------- */
   function route() {
-    // 공유용 주소(/jarip1)로 들어오면 그 반 화면을 열어요
-    const pathId = location.pathname.replace(/^\/|\/$/g, "");
-    if (!location.hash && /^[a-z0-9]+$/.test(pathId)) {
-      history.replaceState(null, "", `/${location.search}#/${pathId}`);
-    }
-    const [, id, tab] = (location.hash || "#/").split("/");
+    // 반 화면 주소는 /jarip1, 탭은 /jarip1#menu 처럼 씁니다.
+    // (카카오톡 등은 # 뒤를 읽지 않으므로, 주소창을 그대로 복사해도 반별 미리보기가 나와요)
+    const legacy = location.hash.match(/^#\/([a-z0-9]+)(?:\/([a-z]+))?/);
+    if (legacy) { location.replace(`/${legacy[1]}${location.search}${legacy[2] ? "#" + legacy[2] : ""}`); return; }
+    const id = location.pathname.replace(/^\/|\/$/g, "").split("/")[0];
+    const tab = location.hash.slice(1);
     clearInterval(timer);
     if (!id) return renderHome();
     if (state.cls !== id) state = { cls: id, tab: "today", date: null, weekOffset: 0 };
@@ -110,7 +110,7 @@
           else if (nxt) nowTxt = `<small>다음 · ${nxt.start}</small><b>${icon(nxt.category)} ${esc(nxt.category)}</b>`;
           else nowTxt = "오늘 수업이 끝났어요 👋";
         }
-        return `<a class="class-card" href="#/${d.id}" style="--c:${d.color}">
+        return `<a class="class-card" href="/${d.id}${location.search}" style="--c:${d.color}">
           <span class="name">${esc(d.name)}</span>
           <span class="go">보러 가기 →</span>
           <span class="now">${nowTxt}</span></a>`;
@@ -134,7 +134,7 @@
   async function renderClass() {
     await loadIndex();
     let data;
-    try { data = await loadClass(state.cls); } catch { location.hash = "#/"; return; }
+    try { data = await loadClass(state.cls); } catch { location.replace("/"); return; }
     data.menu = await loadMenu(data.month);
     document.documentElement.style.setProperty("--accent", data.color);
     document.querySelector('meta[name="theme-color"]').content = data.color;
@@ -148,7 +148,7 @@
     $app.innerHTML = `
       <header class="term-head"><div class="wrap">
         <div class="head-row">
-          <a class="back" href="#/">← 반 선택</a>
+          <a class="back" href="/${location.search}">← 반 선택</a>
           <div class="head-title"><div class="sub">${LOGO}<span>${esc(data.period)}</span></div><h1>${esc(data.name)}</h1></div>
           <button class="tool-btn" id="fs" title="전체화면">⛶ 전체화면</button>
           <div class="clock"><div class="time" id="clk"></div><div class="date" id="clkd"></div></div>
@@ -158,7 +158,7 @@
       <main class="wrap" id="view"></main>`;
 
     $app.querySelectorAll(".tab").forEach((b) => b.addEventListener("click", () => {
-      location.hash = `#/${state.cls}${b.dataset.tab === "today" ? "" : "/" + b.dataset.tab}`;
+      location.hash = b.dataset.tab;
     }));
     document.getElementById("fs").addEventListener("click", () => {
       document.body.classList.toggle("kiosk");
@@ -291,7 +291,7 @@
           return `<li class="slot ${st}${meal}" ${st === "current" ? 'aria-current="step"' : ""}>
           <div class="when"><b>${esc(b.label)}</b><span>${b.start}~${b.end}</span></div>
           <div class="emoji" aria-hidden="true">${icon(b.category)}</div>
-          <a class="body lunch-link" href="#/${state.cls}/menu">
+          <a class="body lunch-link" href="#menu">
             <span class="cat">${esc(main.name)}</span><span class="det">${esc(lunch.items.slice(1).map((x) => x.name).join(" · "))}</span><span class="more">식단표 보기 →</span></a></li>`;
         }
         return `<li class="slot ${st}${meal}" ${st === "current" ? 'aria-current="step"' : ""}>
@@ -339,7 +339,7 @@
           <button class="nav-btn" data-w="1" ${wi === weeks.length - 1 ? "disabled" : ""} aria-label="다음 주">▶</button>
         </div><div class="week-grid">${cols}</div>`;
       view().querySelectorAll("[data-w]").forEach((b) => b.addEventListener("click", () => { state.weekOffset = wi - cur + Number(b.dataset.w); VIEWS.week(data); }));
-      view().querySelectorAll("[data-day]").forEach((b) => b.addEventListener("click", () => { state.date = b.dataset.day; location.hash = `#/${state.cls}`; }));
+      view().querySelectorAll("[data-day]").forEach((b) => b.addEventListener("click", () => { state.date = b.dataset.day; location.hash = "today"; }));
     },
 
     month(data) {
@@ -366,7 +366,7 @@
       view().innerHTML = `<h2 class="section-title">${y}년 ${m + 1}월 한눈에 보기</h2>
         <p class="legend">날짜를 누르면 그날 시간표가 나와요.</p>
         <div class="cal">${["월", "화", "수", "목", "금"].map((x) => `<div class="cal-h">${x}</div>`).join("")}${cells.join("")}</div>`;
-      view().querySelectorAll("[data-day]").forEach((b) => b.addEventListener("click", () => { state.date = b.dataset.day; location.hash = `#/${state.cls}`; }));
+      view().querySelectorAll("[data-day]").forEach((b) => b.addEventListener("click", () => { state.date = b.dataset.day; location.hash = "today"; }));
     },
 
     elective(data) {
