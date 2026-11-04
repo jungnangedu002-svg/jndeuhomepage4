@@ -37,6 +37,28 @@ python3 tools/xlsx_menu_to_json.py 2026년_12월_식단표.xlsx
 `data/<YYYY-MM>/<반ID>.json`, `data/<YYYY-MM>/menu.json` 이 만들어지고 `data/index.json` 의 `latest` 가 가장 최근 달로 바뀝니다.
 커밋·푸시하면 Vercel이 자동으로 다시 배포합니다.
 
+## 카카오톡 등 공유 미리보기
+
+반마다 공유용 주소가 있어요. 이 주소를 보내면 반 이름이 들어간 미리보기 카드가 보입니다.
+
+| 반 | 공유 주소 |
+|---|---|
+| 전체 | `https://jndeuhomepage4.vercel.app/` |
+| 자립지원1반 | `https://jndeuhomepage4.vercel.app/jarip1` |
+| 자립지원2반 | `https://jndeuhomepage4.vercel.app/jarip2` |
+| 직업지원반 | `https://jndeuhomepage4.vercel.app/jikup` |
+| 디자인아트반 | `https://jndeuhomepage4.vercel.app/design` |
+| 레포츠문화반 | `https://jndeuhomepage4.vercel.app/leports` |
+
+Vercel 주소가 다르면 아래처럼 다시 만들어 주세요 (Playwright 필요).
+
+```bash
+SITE_URL=https://실제주소.vercel.app node tools/make_share.js
+```
+
+카카오톡은 미리보기를 한동안 저장해 두므로, 바꾼 뒤에도 예전 카드가 보이면
+카카오 개발자 사이트의 "공유 디버거"에서 주소를 넣고 초기화하면 됩니다.
+
 ## Vercel 배포
 
 1. https://vercel.com 에서 **Add New → Project** → 이 GitHub 저장소 선택

@@ -78,6 +78,11 @@
 
   /* ---------- 라우팅 ---------- */
   function route() {
+    // 공유용 주소(/jarip1)로 들어오면 그 반 화면을 열어요
+    const pathId = location.pathname.replace(/^\/|\/$/g, "");
+    if (!location.hash && /^[a-z0-9]+$/.test(pathId)) {
+      history.replaceState(null, "", `/${location.search}#/${pathId}`);
+    }
     const [, id, tab] = (location.hash || "#/").split("/");
     clearInterval(timer);
     if (!id) return renderHome();
