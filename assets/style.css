@@ -30,9 +30,9 @@ button { font: inherit; color: inherit; cursor: pointer; }
 
 /* ---------- 홈 ---------- */
 .home-head { padding: 48px 0 28px; }
-.logo-chip { display: inline-flex; align-items: center; background: #fff; border-radius: 10px; padding: 6px 10px; line-height: 0; }
-.logo-chip img { height: 100%; width: auto; display: block; }
-.home-head .center .logo-chip { height: 52px; margin-left: -10px; }
+.logo { display: inline-flex; line-height: 0; max-width: 100%; }
+.logo img { height: 100%; width: auto; max-width: 100%; object-fit: contain; display: block; }
+.home-head .center .logo { height: 40px; }
 .home-head h1 { font-size: clamp(30px, 5vw, 44px); margin: 6px 0 4px; letter-spacing: -0.02em; }
 .home-head p { margin: 0; color: var(--ink-2); }
 .class-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(230px, 1fr)); gap: 16px; }
@@ -60,7 +60,7 @@ button { font: inherit; color: inherit; cursor: pointer; }
 .head-title { flex: 1; min-width: 200px; }
 .head-title .sub { font-size: 14px; display: flex; align-items: center; gap: 10px; flex-wrap: wrap; margin-bottom: 4px; }
 .head-title .sub > span:last-child { opacity: .85; }
-.head-title .logo-chip { height: 30px; padding: 5px 8px; border-radius: 8px; }
+.head-title .logo { height: 20px; opacity: .95; }
 .head-title h1 { margin: 0; font-size: clamp(26px, 4vw, 36px); letter-spacing: -0.02em; line-height: 1.2; }
 .clock { text-align: right; }
 .clock .time { font-size: clamp(30px, 4.5vw, 44px); font-weight: 800; font-variant-numeric: tabular-nums; line-height: 1.1; }
@@ -251,8 +251,8 @@ td.sub { font-weight: 800; white-space: nowrap; }
 @media (max-width: 640px) {
   body { font-size: 17px; }
   .term-head { position: static; padding-top: 14px; }
-  .home-head .center .logo-chip { height: 34px; }
-  .head-title .logo-chip { height: 24px; }
+  .home-head .center .logo { height: 26px; }
+  .head-title .logo { height: 16px; }
   #fs { display: none; }
   .head-row { gap: 10px; }
   .wrap { padding: 0 16px 40px; }

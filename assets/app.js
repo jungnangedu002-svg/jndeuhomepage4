@@ -30,7 +30,8 @@
 
   const esc = (s) => String(s ?? "").replace(/[&<>"']/g, (c) => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;" }[c]));
   const $app = document.getElementById("app");
-  const LOGO = `<span class="logo-chip"><img src="/assets/logo.png" alt="사회복지법인 성민 중랑구발달장애인평생교육센터" width="1164" height="84" /></span>`;
+  const LOGO_ALT = "사회복지법인 성민 중랑구발달장애인평생교육센터";
+  const LOGO = `<span class="logo"><img src="/assets/logo.png" alt="${LOGO_ALT}" width="1164" height="84" /></span>`;
   const cache = {};
   let index = null;
   let state = { cls: null, tab: "today", date: null, weekOffset: 0 };
