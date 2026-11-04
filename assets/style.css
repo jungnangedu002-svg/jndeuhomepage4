@@ -36,6 +36,7 @@ button { font: inherit; color: inherit; cursor: pointer; }
 .home-head h1 { font-size: clamp(30px, 5vw, 44px); margin: 6px 0 4px; letter-spacing: -0.02em; }
 .home-head p { margin: 0; color: var(--ink-2); }
 .class-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(230px, 1fr)); gap: 16px; }
+@media (min-width: 900px) { .class-grid { grid-template-columns: repeat(3, minmax(0, 1fr)); } .class-card { min-height: 170px; } }
 .class-card {
   display: flex; flex-direction: column; gap: 10px; text-decoration: none;
   background: var(--surface); border-radius: var(--radius); padding: 22px; box-shadow: var(--shadow);
@@ -132,7 +133,7 @@ main.wrap { padding-top: 24px; }
 /* ---------- 이번 주 ---------- */
 .week-head { display: flex; align-items: center; gap: 10px; margin-bottom: 14px; }
 .week-head h2 { margin: 0; flex: 1; font-size: 24px; }
-.week-grid { display: grid; grid-template-columns: repeat(5, minmax(0, 1fr)); gap: 12px; }
+.week-grid { display: grid; grid-template-columns: repeat(var(--cols, 5), minmax(0, 1fr)); gap: 12px; }
 .wday { background: var(--surface); border-radius: var(--radius); box-shadow: var(--shadow); overflow: hidden; display: flex; flex-direction: column; }
 .wday.empty { opacity: .45; }
 .wday-h { padding: 12px 14px; background: var(--surface-2); border-bottom: 1px solid var(--line); display: flex; justify-content: space-between; align-items: baseline; }
@@ -148,7 +149,7 @@ main.wrap { padding-top: 24px; }
 .wblock.meal .c, .wblock.clean .c { font-weight: 600; color: var(--ink-2); }
 
 /* ---------- 이번 달 ---------- */
-.cal { display: grid; grid-template-columns: repeat(5, minmax(0, 1fr)); gap: 10px; }
+.cal { display: grid; grid-template-columns: repeat(var(--cols, 5), minmax(0, 1fr)); gap: 10px; }
 .cal-h { text-align: center; font-weight: 800; color: var(--ink-2); padding: 4px 0; }
 .cal-d {
   background: var(--surface); border-radius: 14px; box-shadow: var(--shadow); padding: 10px 12px; min-height: 116px;
@@ -182,6 +183,7 @@ td.sub { font-weight: 800; white-space: nowrap; }
 .info-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 16px; }
 .info-grid .card h3 { margin: 0 0 10px; font-size: 20px; }
 .info-grid .card p { margin: 0; color: var(--ink-2); }
+.info-grid .card p + p { margin-top: 8px; }
 .fees { margin: 0; padding-left: 20px; color: var(--ink-2); }
 .fees li + li { margin-top: 4px; }
 .contacts { display: flex; flex-direction: column; gap: 10px; }
@@ -265,7 +267,7 @@ td.sub { font-weight: 800; white-space: nowrap; }
   .slot .body { grid-area: body; }
   .now-card { padding: 22px; min-height: 0; }
   .now-card .emoji { font-size: 56px; }
-  .cal { grid-template-columns: repeat(5, minmax(0, 1fr)); gap: 4px; }
+  .cal { gap: 4px; }
   .cal-d { min-height: 64px; padding: 6px; }
   .cal-d .n { font-size: 17px; }
   .cal-d .hl { display: none; }

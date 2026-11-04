@@ -5,7 +5,8 @@
    "jarip2",
    "jikup",
    "design",
-   "leports"
+   "leports",
+   "dangwa"
   ]
  },
  "latest": "2026-11",
@@ -13,27 +14,38 @@
   {
    "id": "jarip1",
    "name": "자립지원1반",
-   "color": "#2f7d5b"
+   "color": "#2f7d5b",
+   "meals": true
   },
   {
    "id": "jarip2",
    "name": "자립지원2반",
-   "color": "#2b6cb0"
+   "color": "#2b6cb0",
+   "meals": true
   },
   {
    "id": "jikup",
    "name": "직업지원반",
-   "color": "#b7791f"
+   "color": "#b7791f",
+   "meals": true
   },
   {
    "id": "design",
    "name": "디자인아트반",
-   "color": "#b83280"
+   "color": "#b83280",
+   "meals": true
   },
   {
    "id": "leports",
    "name": "레포츠문화반",
-   "color": "#c05621"
+   "color": "#c05621",
+   "meals": true
+  },
+  {
+   "id": "dangwa",
+   "name": "단과반",
+   "color": "#6b46c1",
+   "meals": false
   }
  ]
 }

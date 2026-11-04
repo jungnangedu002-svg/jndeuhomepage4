@@ -17,8 +17,16 @@
     ["info", "안내"],
   ];
   const WD = ["일", "월", "화", "수", "목", "금", "토"];
+  const WEEK5 = ["월", "화", "수", "목", "금"];
+  // 반마다 보여줄 탭 (단과반처럼 점심이 없거나, 선택과목·외부활동 안내가 없으면 그 탭은 숨김)
+  const classTabs = (data) => TABS.filter(([k]) =>
+    (k !== "menu" || (data.meals !== false && data.menu)) &&
+    (k !== "elective" || data.electives) &&
+    (k !== "outing" || data.outings?.length));
+  const weekdaysOf = (data) => data.weekdays?.length ? data.weekdays : WEEK5;
 
   const ICONS = [
+    [/등원/, "🚶"], [/스마트|키오스크/, "📱"], [/스텝업|안무|댄스/, "💃"], [/자립생활/, "🏡"],
     [/점심|식사/, "🍚"], [/정리|청소/, "🧹"], [/태권/, "🥋"], [/원예|식물/, "🌱"], [/음악|노래/, "🎵"],
     [/DIY|공예/, "✂️"], [/생활체육|운동|스포츠|체육|레포츠/, "🏃"], [/지역사회|나들이|이동|트레킹/, "🚌"],
     [/도서관/, "📚"], [/직업|사무|작업/, "💼"], [/미술|창작|디자인|아트|그리기/, "🎨"],
@@ -135,14 +143,16 @@
     await loadIndex();
     let data;
     try { data = await loadClass(state.cls); } catch { location.replace("/"); return; }
-    data.menu = await loadMenu(data.month);
+    data.menu = data.meals === false ? null : await loadMenu(data.month);
+    const myTabs = classTabs(data);
+    if (!myTabs.some(([k]) => k === state.tab)) state.tab = "today";
     document.documentElement.style.setProperty("--accent", data.color);
     document.querySelector('meta[name="theme-color"]').content = data.color;
     document.title = `${data.name} 가정통신문&식단표`;
     const n = now();
     if (!state.date) state.date = pickDefaultDate(data, n);
 
-    const tabs = TABS.map(([k, label]) =>
+    const tabs = myTabs.map(([k, label]) =>
       `<button class="tab" role="tab" aria-selected="${state.tab === k}" data-tab="${k}">${label}</button>`).join("");
 
     $app.innerHTML = `
@@ -323,9 +333,10 @@
       if (cur < 0) cur = weeks.length - 1;
       const wi = Math.min(Math.max(cur + state.weekOffset, 0), weeks.length - 1);
       const w = weeks[wi];
-      const cols = ["월", "화", "수", "목", "금"].map((wd, k) => {
+      const wds = weekdaysOf(data);
+      const cols = wds.map((wd) => {
         const d = w.days[wd];
-        const dt = new Date(w.mon); dt.setDate(w.mon.getDate() + k);
+        const dt = new Date(w.mon); dt.setDate(w.mon.getDate() + WEEK5.indexOf(wd));
         if (!d) return `<div class="wday empty"><div class="wday-h"><b>${wd}</b><span>${dt.getMonth() + 1}/${dt.getDate()}</span></div><div class="wblock"><div class="x">수업 없음</div></div></div>`;
         const blocks = d.blocks.map((b) => {
           const cls = /점심/.test(b.category) ? " meal" : /정리/.test(b.category) ? " clean" : "";
@@ -337,7 +348,7 @@
           <button class="nav-btn" data-w="-1" ${wi === 0 ? "disabled" : ""} aria-label="이전 주">◀</button>
           <h2>${wi + 1}주차 · ${w.mon.getMonth() + 1}월 ${w.mon.getDate()}일 주간</h2>
           <button class="nav-btn" data-w="1" ${wi === weeks.length - 1 ? "disabled" : ""} aria-label="다음 주">▶</button>
-        </div><div class="week-grid">${cols}</div>`;
+        </div><div class="week-grid" style="--cols:${wds.length}">${cols}</div>`;
       view().querySelectorAll("[data-w]").forEach((b) => b.addEventListener("click", () => { state.weekOffset = wi - cur + Number(b.dataset.w); VIEWS.week(data); }));
       view().querySelectorAll("[data-day]").forEach((b) => b.addEventListener("click", () => { state.date = b.dataset.day; location.hash = "today"; }));
     },
@@ -349,23 +360,25 @@
       const last = new Date(y, m + 1, 0).getDate();
       const byDate = Object.fromEntries(data.days.map((d) => [d.date, d]));
       const cells = [];
-      const startWd = new Date(y, m, 1).getDay();
-      // 첫 주 앞의 빈칸 (월~금 기준)
-      for (let k = 1; k < (startWd === 0 || startWd === 6 ? 1 : startWd); k++) cells.push(`<div class="cal-d blank"></div>`);
+      const wds = weekdaysOf(data);
+      const nums = wds.map((x) => WD.indexOf(x));
+      // 첫 주 앞의 빈칸 (수업하는 요일 기준)
+      const firstWd = new Date(y, m, 1).getDay();
+      nums.filter((x) => x < firstWd && firstWd <= 5).forEach(() => cells.push(`<div class="cal-d blank"></div>`));
       for (let dd = 1; dd <= last; dd++) {
         const dt = new Date(y, m, dd), wd = dt.getDay();
-        if (wd === 0 || wd === 6) continue;
+        if (!nums.includes(wd)) continue;
         const key = `${y}-${String(m + 1).padStart(2, "0")}-${String(dd).padStart(2, "0")}`;
         const d = byDate[key];
         if (!d) { cells.push(`<div class="cal-d past"><span class="n">${dd}</span><span class="hl"><span>수업 없음</span></span></div>`); continue; }
-        const hl = d.blocks.filter((b) => !/점심|정리|일상생활/.test(b.category)).slice(0, 3)
+        const hl = d.blocks.filter((b) => !/점심|정리|일상생활|등원/.test(b.category)).slice(0, 3)
           .map((b) => `<span>${icon(b.category, b.detail)} ${esc(b.category)}</span>`).join("");
         cells.push(`<button class="cal-d${key === n.date ? " is-today" : ""}${key < n.date ? " past" : ""}" data-day="${key}">
           <span class="n">${dd}</span><span class="dot"></span><span class="hl">${hl}</span></button>`);
       }
       view().innerHTML = `<h2 class="section-title">${y}년 ${m + 1}월 한눈에 보기</h2>
         <p class="legend">날짜를 누르면 그날 시간표가 나와요.</p>
-        <div class="cal">${["월", "화", "수", "목", "금"].map((x) => `<div class="cal-h">${x}</div>`).join("")}${cells.join("")}</div>`;
+        <div class="cal" style="--cols:${wds.length}">${wds.map((x) => `<div class="cal-h">${x}</div>`).join("")}${cells.join("")}</div>`;
       view().querySelectorAll("[data-day]").forEach((b) => b.addEventListener("click", () => { state.date = b.dataset.day; location.hash = "today"; }));
     },
 
@@ -393,13 +406,13 @@
     },
 
     info(data) {
-      const notices = data.notices.map((x) => `<div class="card"><h3>📢 ${esc(x.title)}</h3><p>${esc(x.body)}</p></div>`).join("");
+      const notices = data.notices.map((x) => `<div class="card"><h3>📢 ${esc(x.title)}</h3>${x.body.split("\n").map((t) => `<p>${esc(t)}</p>`).join("")}</div>`).join("");
       const contacts = data.contacts.map((c) => `<div class="contact"><b>${esc(c.name)} 선생님</b>${c.phone ? `<a href="tel:${c.phone}">📞 ${esc(c.phone)}</a>` : ""}</div>`).join("");
       view().innerHTML = `<h2 class="section-title">가정통신문 안내</h2>
         <div class="info-grid">
           <div class="card"><h3>💌 인사말</h3><p>${esc(data.greeting)}</p></div>
           ${notices}
-          <div class="card"><h3>💳 이용료 및 식대</h3><ul class="fees">${data.fees.map((f) => `<li>${esc(f)}</li>`).join("")}</ul></div>
+          <div class="card"><h3>💳 ${data.meals === false ? "이용료" : "이용료 및 식대"}</h3><ul class="fees">${data.fees.map((f) => `<li>${esc(f)}</li>`).join("")}</ul></div>
           <div class="card"><h3>☎ 담임 선생님</h3><div class="contacts">${contacts}</div></div>
         </div>
         <p class="disclaimer">※ ${esc(data.disclaimer)}</p>`;

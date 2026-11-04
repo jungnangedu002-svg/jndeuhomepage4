@@ -39,6 +39,7 @@ function cardHTML({ title, sub, color, chips }) {
     .sub{font-size:44px;font-weight:700;margin-top:18px;color:#2a2d2b}
     .chips{display:flex;gap:12px;margin-top:40px;flex-wrap:wrap}
     .chip{font-size:28px;font-weight:700;padding:10px 22px;border-radius:999px;color:#fff}
+    .chips.many{gap:10px;flex-wrap:nowrap}.chips.many .chip{font-size:24px;padding:9px 17px}
     .dots{position:absolute;right:72px;top:64px;display:flex;gap:10px}
     .dots i{width:22px;height:22px;border-radius:50%;display:block}
   </style>
@@ -48,7 +49,7 @@ function cardHTML({ title, sub, color, chips }) {
     <div class="logo"><img src="${logo}"></div>
     <h1>${esc(title)}</h1>
     <div class="sub">${esc(sub)}</div>
-    <div class="chips">${chips.map((c) => `<span class="chip" style="background:${c.color}">${esc(c.text)}</span>`).join("")}</div>
+    <div class="chips${chips.length > 5 ? " many" : ""}">${chips.map((c) => `<span class="chip" style="background:${c.color}">${esc(c.text)}</span>`).join("")}</div>
   </div>`;
 }
 
@@ -96,8 +97,9 @@ function shareBlock({ title, desc, url, image }) {
       file: `${c.id}/index.html`,
       url: `${SITE_URL}/${c.id}`,
       title: `${c.name} ${SITE_NAME}`,
-      desc: `${c.name}의 오늘 시간표, 식단표, 이번 달 가정통신문을 확인하세요. · ${CENTER}`,
-      card: { title: c.name, sub: SITE_NAME, color: c.color, chips: ["오늘 시간표", "식단표", "가정통신문"].map((t) => ({ text: t, color: c.color })) },
+      desc: `${c.name}의 오늘 시간표${c.meals === false ? "" : ", 식단표"}, 이번 달 가정통신문을 확인하세요. · ${CENTER}`,
+      card: { title: c.name, sub: SITE_NAME, color: c.color,
+        chips: (c.meals === false ? ["오늘 시간표", "이번 달 일정", "가정통신문"] : ["오늘 시간표", "식단표", "가정통신문"]).map((t) => ({ text: t, color: c.color })) },
     })),
   ];
 

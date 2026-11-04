@@ -13,6 +13,7 @@
 | 직업지원반 | `/jikup` |
 | 디자인아트반 | `/design` |
 | 레포츠문화반 | `/leports` |
+| 단과반 (월~목 오후, 식단표 없음) | `/dangwa` |
 
 각 반 화면의 탭: **오늘**(지금 하는 활동·남은 시간·다음 활동) · **식단표**(그날 점심·이번 주 식단·알레르기·원산지) · **이번 주** · **이번 달** · **선택과목** · **외부활동** · **안내**(인사말·공지·이용료·담임 연락처)
 
@@ -24,7 +25,7 @@
 
 ```bash
 pip install olefile
-python3 tools/hwp_to_json.py 자립지원1반.hwp 자립지원2반.hwp 직업지원반.hwp 디자인아트반.hwp 레포츠문화반.hwp
+python3 tools/hwp_to_json.py 자립지원1반.hwp 자립지원2반.hwp 직업지원반.hwp 디자인아트반.hwp 레포츠문화반.hwp 단과반.hwp
 ```
 
 식단표(엑셀)는 아래 명령으로 넣습니다.
@@ -49,6 +50,7 @@ python3 tools/xlsx_menu_to_json.py 2026년_12월_식단표.xlsx
 | 직업지원반 | `https://jndeuhomepage4.vercel.app/jikup` |
 | 디자인아트반 | `https://jndeuhomepage4.vercel.app/design` |
 | 레포츠문화반 | `https://jndeuhomepage4.vercel.app/leports` |
+| 단과반 | `https://jndeuhomepage4.vercel.app/dangwa` |
 
 Vercel 주소가 다르면 아래처럼 다시 만들어 주세요 (Playwright 필요).
 

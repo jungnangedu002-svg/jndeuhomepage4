@@ -14,16 +14,16 @@ import olefile
 ROOT = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 DATA = os.path.join(ROOT, "data")
 
-# 반 이름 → (ID, 대표 색상)
+# 반 이름 → (ID, 대표 색상, 점심 식단표 사용 여부)
 CLASSES = {
-    "자립지원1반": ("jarip1", "#2f7d5b"),
-    "자립지원2반": ("jarip2", "#2b6cb0"),
-    "직업지원반": ("jikup", "#b7791f"),
-    "디자인아트반": ("design", "#b83280"),
-    "레포츠문화반": ("leports", "#c05621"),
+    "자립지원1반": ("jarip1", "#2f7d5b", True),
+    "자립지원2반": ("jarip2", "#2b6cb0", True),
+    "직업지원반": ("jikup", "#b7791f", True),
+    "디자인아트반": ("design", "#b83280", True),
+    "레포츠문화반": ("leports", "#c05621", True),
+    "단과반": ("dangwa", "#6b46c1", False),  # 오후(13~17시) 수업 · 점심 없음
 }
 WEEKDAYS = ["월", "화", "수", "목", "금"]
-DAY_COL = {"월": 1, "화": 2, "수": 3, "목": 4, "금": 6}  # 시간표 격자에서 요일을 대표하는 열
 
 
 # ---------------------------------------------------------------- HWP 파싱
@@ -96,7 +96,13 @@ def split_activity(text):
     lines = [clean(l) for l in text.split("\n") if clean(l)]
     if not lines:
         return "", ""
-    return lines[0], " ".join(lines[1:]).replace("( ", "(").strip()
+    rest = []
+    for l in lines[1:]:
+        if l.startswith("-"):  # '- 항목' 목록은 ' · '로 이어 붙임
+            rest.append(("· " if rest else "") + l.lstrip("- ").strip())
+        else:
+            rest.append(l)
+    return lines[0], " ".join(rest).replace("( ", "(").strip()
 
 
 def parse_timetable(cells, year, month):
@@ -107,19 +113,26 @@ def parse_timetable(cells, year, month):
         return None
 
     days = []
-    header_rows = sorted({x["r"] for x in cells if clean(x["text"]) == "시 간"})
-    for hr in header_rows:
+    header_rows = sorted({x["r"] for x in cells if x["c"] == 0 and clean(x["text"]).replace(" ", "") == "시간"})
+    nrows = max(x["r"] + x["rs"] for x in cells)
+    for k, hr in enumerate(header_rows):
         date_row = hr + 1
-        period_rows = sorted({x["r"] for x in cells if x["c"] == 0 and x["r"] > date_row and x["r"] < hr + 8})
-        for wd in WEEKDAYS:
-            dc = at(date_row, DAY_COL[wd])
+        end = header_rows[k + 1] if k + 1 < len(header_rows) else nrows
+        period_rows = sorted({x["r"] for x in cells if x["c"] == 0 and date_row < x["r"] < end})
+        # 요일 머리글 칸의 마지막 열을 그 요일의 대표 열로 사용 (병합 칸 대응)
+        day_col = {}
+        for x in cells:
+            if x["r"] == hr and clean(x["text"]) in WEEKDAYS:
+                day_col[clean(x["text"])] = x["c"] + x["cs"] - 1
+        for wd in [w for w in WEEKDAYS if w in day_col]:
+            dc = at(date_row, day_col[wd])
             if not dc or not clean(dc["text"]).isdigit():
                 continue
             day = int(clean(dc["text"]))
             blocks, seen = [], set()
             for pr in period_rows:
                 head = at(pr, 0)
-                cell = at(pr, DAY_COL[wd])
+                cell = at(pr, day_col[wd])
                 if not cell or not clean(cell["text"]):
                     continue
                 hlines = [clean(l) for l in head["text"].split("\n") if clean(l)]
@@ -206,7 +219,7 @@ def convert(path):
 
     title = next(clean(p) for p in paras if "가정통신문" in p)
     cname = next(n for n in CLASSES if n in title)
-    cid, color = CLASSES[cname]
+    cid, color, meals = CLASSES[cname]
     period = clean(next(p for p in paras if "기" in p and "간" in p and "~" in p).split(":", 1)[1])
     m = re.search(r"(\d{4})\.(\d{1,2})\.", period)
     year, month = int(m.group(1)), int(m.group(2))
@@ -216,8 +229,11 @@ def convert(path):
     while i < len(paras):
         p = clean(paras[i])
         if i + 1 < len(paras) and clean(paras[i + 1]).startswith("-") and p and not p.startswith("-"):
-            notices.append({"title": p, "body": clean(paras[i + 1])[1:].strip()})
-            i += 2
+            body, j = [], i + 1
+            while j < len(paras) and clean(paras[j]).startswith("-"):  # '- ' 문단 여러 개를 한 안내로
+                body.append(clean(paras[j])[1:].strip()); j += 1
+            notices.append({"title": p, "body": "\n".join(body)})
+            i = j
             continue
         i += 1
     greeting = next((n["body"] for n in notices if n["title"] == "인사말"), "")
@@ -226,24 +242,30 @@ def convert(path):
     fee_lines, collecting = [], False
     for p in paras:
         cp = clean(p)
-        if "이용료 및 식대 안내" in cp:
+        if "이용료" in cp and "안내" in cp and "*" * 5 in cp:
             collecting = True; continue
         if collecting:
             if "문의" in cp:
+                before = re.split(r"☎|문의", cp)[0].strip()  # 같은 줄에 연락처가 붙은 경우
+                if before:
+                    fee_lines.append(before)
                 break
             if cp:
                 fee_lines.append(cp.lstrip("* ").strip())
     contact_line = next((clean(p) for p in paras if "문의" in p and "070" in p), "")
     disclaimer = next((clean(p) for p in paras if "변경될 수 있음" in p), "")
+    days = parse_timetable(tables[0], year, month)
 
     return cid, f"{year}-{month:02d}", {
         "id": cid,
         "name": cname,
         "color": color,
+        "meals": meals,
+        "weekdays": [w for w in WEEKDAYS if any(d["weekday"] == w for d in days)],
         "month": f"{year}-{month:02d}",
         "title": title,
         "period": period,
-        "days": parse_timetable(tables[0], year, month),
+        "days": days,
         "electives": parse_electives(tables[1]) if len(tables) > 1 else None,
         "outings": parse_outings(tables[2]) if len(tables) > 2 else [],
         "greeting": greeting,
@@ -271,7 +293,8 @@ def main(paths):
     for m in index["months"]:
         index["months"][m].sort(key=order.index)
     index["latest"] = max(index["months"])
-    index["classes"] = [{"id": i, "name": n, "color": c} for n, (i, c) in CLASSES.items()]
+    index["classes"] = [{"id": i, "name": n, "color": c, "meals": m} for n, (i, c, m) in CLASSES.items()
+                        if any(i in ids for ids in index["months"].values())]
     with open(index_path, "w", encoding="utf-8") as f:
         json.dump(index, f, ensure_ascii=False, indent=1)
 
