@@ -58,11 +58,8 @@
   async function loadIndex() { index = index || (await getJSON("/data/index.json")); return index; }
   async function loadClass(id, month) { return getJSON(`/data/${month || index.latest}/${id}.json`); }
   async function loadMenu(month) {
-    const [menu, photos] = await Promise.all([
-      getJSON(`/data/${month || index.latest}/menu.json`).catch(() => null),
-      getJSON("/data/food-photos.json").catch(() => ({})),
-    ]);
-    return menu && { ...menu, photos, byDate: Object.fromEntries(menu.days.map((d) => [d.date, d])) };
+    const menu = await getJSON(`/data/${month || index.latest}/menu.json`).catch(() => null);
+    return menu && { ...menu, byDate: Object.fromEntries(menu.days.map((d) => [d.date, d])) };
   }
 
   function blockStatus(day, b, n) {
@@ -179,16 +176,6 @@
 
   const view = () => document.getElementById("view");
 
-  /* ---------- 음식 사진 ---------- */
-  const FOOD_EMOJI = [[/볶음밥|덮밥/, "🍛"], [/제육|불고기|함박|떡갈비|스테이크|미트볼|김치찜/, "🥩"], [/닭|치킨/, "🍗"], [/^(쌀밥|잡곡밥|후리카게밥)$/, "🍚"], [/김치|깍두기/, "🥬"], [/국|탕|찌개|백탕/, "🍲"], [/샐러드|코올슬로/, "🥗"], [/까스|튀김|고로케|탕수육|칩스/, "🍤"],
-    [/만두/, "🥟"], [/계란|난/, "🥚"], [/떡볶이/, "🌶️"], [/카레/, "🍛"], [/닭|치킨/, "🍗"], [/함박|떡갈비|스테이크|미트볼|불고기|제육/, "🥩"], [/두부|묵/, "🧈"], [/나물|무침|볶음|조림/, "🥢"]];
-  function foodImg(menu, item, cls = "") {
-    const ph = menu?.photos?.[item.name];
-    const alt = esc(item.name);
-    if (ph?.src) return `<figure class="food-img ${cls}"><img src="${esc(ph.src)}" alt="${alt}" loading="lazy" decoding="async" /></figure>`;
-    const em = (FOOD_EMOJI.find(([re]) => re.test(item.name)) || [, "🍽️"])[1];
-    return `<figure class="food-img placeholder ${cls}" role="img" aria-label="${alt}"><span>${em}</span><small>사진 준비 중</small></figure>`;
-  }
   const allergenChips = (menu, item) => item.allergens.length
     ? `<div class="allergens" aria-label="알레르기">${item.allergens.map((a) => `<span title="${esc(menu.allergens[a] || "")}">${a}.${esc(menu.allergens[a] || "")}</span>`).join("")}</div>` : "";
 
@@ -205,19 +192,18 @@
       const [main, ...rest] = day.items;
       const badge = isToday ? `<span class="badge">오늘</span>` : state.date < n.date ? `<span class="badge gray">지난 날</span>` : `<span class="badge soft">예정</span>`;
 
-      // 같은 주(월~금) 식단
+      // 같은 주(월~금) 식단표
       const d0 = parseDate(state.date); const mon = new Date(d0); mon.setDate(d0.getDate() - ((d0.getDay() + 6) % 7));
       const week = [0, 1, 2, 3, 4].map((k) => { const x = new Date(mon); x.setDate(mon.getDate() + k);
         return `${x.getFullYear()}-${String(x.getMonth() + 1).padStart(2, "0")}-${String(x.getDate()).padStart(2, "0")}`; });
-      const weekCards = week.map((ds) => {
-        const wd = menu.byDate[ds];
-        if (!wd) return `<div class="mweek-day empty"><div class="mweek-h">${fmtDate(ds)}</div><p>급식 없음</p></div>`;
-        return `<button class="mweek-day${ds === state.date ? " sel" : ""}${ds === n.date ? " is-today" : ""}" data-day="${ds}">
-          <div class="mweek-h">${fmtDate(ds)}${ds === n.date ? ` <span class="badge">오늘</span>` : ""}</div>
-          ${foodImg(menu, wd.items[0], "mweek-photo")}
-          <div class="mweek-main">${esc(wd.items[0].name)}</div>
-          <div class="mweek-thumbs">${wd.items.slice(1).map((it) => `<span>${foodImg(menu, it, "tiny")}<small>${esc(it.name)}</small></span>`).join("")}</div></button>`;
-      }).join("");
+      const rows = ["메인", "반찬1", "반찬2", "김치", "국", "밥"];
+      const cellOf = (ds, r) => menu.byDate[ds]?.items[r];
+      const head = week.map((ds) => `<th class="${ds === state.date ? "sel" : ""}${ds === n.date ? " is-today" : ""}">
+          ${menu.byDate[ds] ? `<button data-day="${ds}">${fmtDate(ds)}</button>` : fmtDate(ds)}</th>`).join("");
+      const body = rows.map((label, r) => `<tr class="r-${r}"><th scope="row">${label}</th>${week.map((ds) => {
+          const it = cellOf(ds, r);
+          return `<td class="${ds === state.date ? "sel" : ""}">${it ? esc(it.name) : menu.byDate[ds] ? "" : '<span class="none">급식 없음</span>'}</td>`;
+        }).join("")}</tr>`).join("");
 
       view().innerHTML = `<div class="day-nav">
           <button class="nav-btn" data-go="-1" ${i <= 0 ? "disabled" : ""} aria-label="이전 날">◀</button>
@@ -225,19 +211,19 @@
           ${!isToday && dates.includes(n.date) ? `<button class="nav-btn" data-go="today">오늘로</button>` : ""}
           <button class="nav-btn" data-go="1" ${i >= dates.length - 1 ? "disabled" : ""} aria-label="다음 날">▶</button>
         </div>
-        <div class="meal-grid">
-          <article class="dish main-dish">${foodImg(menu, main, "big")}
-            <div class="dish-body"><span class="role">오늘의 메인</span><h3>${esc(main.name)}</h3>${allergenChips(menu, main)}</div></article>
-          <div class="side-grid">${rest.map((it) => `<article class="dish">${foodImg(menu, it)}
-            <div class="dish-body"><span class="role">${esc(it.role)}</span><h3>${esc(it.name)}</h3>${allergenChips(menu, it)}</div></article>`).join("")}</div>
-        </div>
-        <h2 class="section-title">이번 주 식단</h2>
-        <div class="mweek">${weekCards}</div>
+        <article class="menu-card">
+          <div class="menu-main"><span class="role">오늘의 메인</span><h3>${esc(main.name)}</h3>${allergenChips(menu, main)}</div>
+          <ul class="menu-list">${rest.map((it) => `<li><span class="role">${esc(it.role)}</span><span class="nm">${esc(it.name)}</span>${allergenChips(menu, it)}</li>`).join("")}</ul>
+        </article>
+        <h2 class="section-title">이번 주 식단표</h2>
+        <div class="menu-week-list">${week.filter((ds) => menu.byDate[ds]).map((ds) => { const it = menu.byDate[ds].items;
+          return `<button class="mday${ds === state.date ? " sel" : ""}" data-day="${ds}"><div class="mday-h">${fmtDate(ds)}${ds === n.date ? ' <span class="badge">오늘</span>' : ""}</div>
+            <div class="mday-main">${esc(it[0].name)}</div><div class="mday-rest">${esc(it.slice(1).map((x) => x.name).join(" · "))}</div></button>`; }).join("")}</div>
+        <div class="table-wrap menu-week-table"><table class="menu-table"><thead><tr><th></th>${head}</tr></thead><tbody>${body}</tbody></table></div>
         <div class="info-grid menu-notes">
           <div class="card"><h3>⚠️ 알레르기 정보</h3><p class="allergen-legend">${Object.entries(menu.allergens).map(([k, v]) => `<span>${k}. ${esc(v)}</span>`).join("")}</p></div>
           <div class="card"><h3>🌏 원산지 표시</h3><ul class="fees">${menu.origin.map((o) => `<li>${esc(o)}</li>`).join("")}</ul></div>
-        </div>
-        ${photoCredits(menu, menu.days)}`;
+        </div>`;
       view().querySelectorAll("[data-go]").forEach((b) => b.addEventListener("click", () => {
         const g = b.dataset.go; state.date = g === "today" ? n.date : dates[i + Number(g)]; VIEWS.menu(data);
       }));
@@ -266,7 +252,7 @@
           const pct = Math.round(((n.mins - toMin(cur.start)) / (toMin(cur.end) - toMin(cur.start))) * 100);
           const lm = /점심/.test(cur.category) && data.menu?.byDate[state.date];
           hero = `<div class="now-card"><div class="k">지금 하는 활동 · ${esc(cur.label)}</div>
-            ${lm ? foodImg(data.menu, lm.items[0], "now-photo") : `<div class="emoji">${icon(cur.category, cur.detail)}</div>`}
+            <div class="emoji">${icon(cur.category, cur.detail)}</div>
             <div class="t">${lm ? esc(lm.items[0].name) : esc(cur.category)}</div>${lm ? `<div class="d">${esc(lm.items.slice(1).map((x) => x.name).join(" · "))}</div>` : cur.detail ? `<div class="d">${esc(cur.detail)}</div>` : ""}
             <div class="tm">${cur.start} ~ ${cur.end} · ${toMin(cur.end) - n.mins}분 남았어요<div class="progress"><i style="width:${pct}%"></i></div></div></div>`;
         } else if (nxt) {
@@ -299,8 +285,7 @@
           <div class="when"><b>${esc(b.label)}</b><span>${b.start}~${b.end}</span></div>
           <div class="emoji" aria-hidden="true">${icon(b.category)}</div>
           <a class="body lunch-link" href="#/${state.cls}/menu">
-            ${foodImg(data.menu, main, "lunch-thumb")}
-            <span><span class="cat">${esc(main.name)}</span><span class="det">${esc(lunch.items.slice(1).map((x) => x.name).join(" · "))}</span><span class="more">식단표 보기 →</span></span></a></li>`;
+            <span class="cat">${esc(main.name)}</span><span class="det">${esc(lunch.items.slice(1).map((x) => x.name).join(" · "))}</span><span class="more">식단표 보기 →</span></a></li>`;
         }
         return `<li class="slot ${st}${meal}" ${st === "current" ? 'aria-current="step"' : ""}>
           <div class="when"><b>${esc(b.label)}</b><span>${b.start}~${b.end}</span></div>
@@ -413,14 +398,6 @@
         <p class="disclaimer">※ ${esc(data.disclaimer)}</p>`;
     },
   };
-
-  function photoCredits(menu, days) {
-    const names = [...new Set(days.flatMap((d) => d.items.map((x) => x.name)))];
-    const list = names.map((nm) => [nm, menu.photos[nm]]).filter(([, p]) => p?.src && p.credit);
-    if (!list.length) return "";
-    return `<details class="credits"><summary>사진 출처 (${list.length})</summary><ul>${list.map(([nm, p]) =>
-      `<li>${esc(nm)}: ${p.source ? `<a href="${esc(p.source)}" target="_blank" rel="noopener">${esc(p.credit)}</a>` : esc(p.credit)}${p.license ? ` · ${esc(p.license)}` : ""}</li>`).join("")}</ul></details>`;
-  }
 
   route();
 })();

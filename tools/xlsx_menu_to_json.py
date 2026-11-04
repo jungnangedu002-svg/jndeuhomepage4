@@ -8,7 +8,6 @@
 
 첫 번째 시트(날짜·밥·알레르기·원산지가 있는 '월간 식단표')를 읽어
 data/<YYYY-MM>/menu.json 으로 저장합니다.
-음식 사진은 assets/food/ 폴더와 data/food-photos.json 에서 이름으로 찾습니다.
 """
 import datetime as dt
 import json, os, re, sys
@@ -81,12 +80,6 @@ def main(paths):
             json.dump(data, f, ensure_ascii=False, indent=1)
         dishes = sorted({i["name"] for d in data["days"] for i in d["items"]})
         print(f"✔ {data['title']} → data/{month}/menu.json  [{len(data['days'])}일, 음식 {len(dishes)}가지]")
-        photos_path = os.path.join(ROOT, "data", "food-photos.json")
-        photos = json.load(open(photos_path, encoding="utf-8")) if os.path.exists(photos_path) else {}
-        missing = [d for d in dishes if d not in photos]
-        if missing:
-            print(f"  사진이 아직 없는 음식 {len(missing)}가지: " + ", ".join(missing))
-
 
 if __name__ == "__main__":
     if len(sys.argv) < 2:
