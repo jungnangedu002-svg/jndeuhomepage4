@@ -56,6 +56,8 @@
     );
     return { date: `${p.year}-${p.month}-${p.day}`, h: +p.hour, m: +p.minute, s: +p.second, mins: +p.hour * 60 + +p.minute };
   }
+  // 기간 표기 통일: 2026.11.2.(월)~11.30.(월) → 2026.11.02.(월) ~ 11.30.(월)
+  const fmtPeriod = (p) => p.replace(/(^|[.~\s])(\d)(?=\.)/g, "$10$2").replace(/\s*~\s*/, " ~ ");
   const toMin = (t) => { const [h, m] = t.split(":").map(Number); return h * 60 + m; };
   const parseDate = (s) => { const [y, m, d] = s.split("-").map(Number); return new Date(y, m - 1, d); };
   const fmtDate = (s, withWd = true) => { const d = parseDate(s); return `${d.getMonth() + 1}월 ${d.getDate()}일${withWd ? ` (${WD[d.getDay()]})` : ""}`; };
@@ -157,10 +159,16 @@
 
     $app.innerHTML = `
       <header class="term-head"><div class="wrap">
-        <div class="head-row">
+        <div class="head-top">
           <a class="back" href="/${location.search}">← 반 선택</a>
-          <div class="head-title"><div class="sub">${LOGO}<span>${esc(data.period)}</span></div><h1>${esc(data.name)}</h1></div>
+          <span class="head-brand">${LOGO}</span>
           <button class="tool-btn" id="fs" title="전체화면">⛶ 전체화면</button>
+        </div>
+        <div class="head-main">
+          <div class="head-title">
+            <h1>${esc(data.name)}</h1>
+            <span class="period">📅 ${esc(fmtPeriod(data.period))}</span>
+          </div>
           <div class="clock"><div class="time" id="clk"></div><div class="date" id="clkd"></div></div>
         </div>
         <nav class="tabs" role="tablist">${tabs}</nav>
